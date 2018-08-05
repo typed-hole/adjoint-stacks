@@ -52,8 +52,8 @@ instance (Adjunction f g) => Monad (g :. f) where
           mu = C . fmap (coerce . counit . C) . unC . fmap unC . unC
 
 -- we construct the state monad as the monad induced by the
--- "left product" functor and the covariant homfunctor.
--- we also introduce a selections of the standard state api.
+-- adjunction of the "left product" functor and the covariant
+-- homfunctor. we also introduce a selection of the standard state api.
 
 newtype LeftPair b a = LP { unLPair :: (a, b) }
                        deriving (Show, Eq, Functor)
@@ -99,4 +99,4 @@ stackDemo = do
   return $ (+) <$> x <*> y
 
 main :: IO ()
-main = print $ runState stackDemo []
+main = print $ runState stackDemo [] -- (8, [1])
