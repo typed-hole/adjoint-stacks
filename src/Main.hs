@@ -12,6 +12,9 @@ import           Control.Monad
 import           Data.Coerce
 import           Data.Functor.Identity
 
+-- we start out by defining some boilerplate for
+-- natural transformations and composition of functors.
+
 type f ~> g = forall x. f x -> g x
 
 newtype (f :. g) x = C { unC :: f (g x) }
@@ -19,6 +22,10 @@ newtype (f :. g) x = C { unC :: f (g x) }
 
 instance (Functor f, Functor g) => Functor (f :. g) where
   fmap f (C fgx) = C $ fmap f <$> fgx
+
+-- a typeclass for adjunctions, including a proof of
+-- how every pair of adjoint functors lets us derive
+-- a monad instance. deriving comonad is left as an exercise ;)
 
 class (Functor f, Functor g) => Adjunction f g where
   leftAdjunct :: (f x -> a) -> (x -> g a)
@@ -38,8 +45,15 @@ instance (Adjunction f g) => Applicative (g :. f) where
 instance (Adjunction f g) => Monad (g :. f) where
   return = unit . coerce
   m >>= f = mu . C . fmap f $ m
+    -- full disclosure: this function is *not* pretty and
+    -- it took some extreme hole driven development to
+    -- get it to typecheck ^^
     where mu :: (g :. f) :. (g :. f) ~> (g :. f)
           mu = C . fmap (coerce . counit . C) . unC . fmap unC . unC
+
+-- we construct the state monad as the monad induced by the
+-- "left product" functor and the covariant homfunctor.
+-- we also introduce a selections of the standard state api.
 
 newtype LeftPair b a = LP { unLPair :: (a, b) }
                        deriving (Show, Eq, Functor)
@@ -61,6 +75,9 @@ put s = C $ \_ -> LP ((), s)
 
 modify :: (s -> s) -> State s ()
 modify f = (f <$> get) >>= put
+
+-- finally we define the essential push/pop operations of stacks,
+-- and take the result out for a spin!
 
 push :: a -> State [a] ()
 push x = modify (x:)
