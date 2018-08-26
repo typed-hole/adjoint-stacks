@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveFunctor              #-}
 {-# LANGUAGE ExplicitForAll             #-}
+{-# LANGUAGE FunctionalDependencies     #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE RankNTypes                 #-}
@@ -27,7 +28,7 @@ instance (Functor f, Functor g) => Functor (f :. g) where
 -- how every pair of adjoint functors lets us derive
 -- a monad instance. deriving comonad is left as an exercise ;)
 
-class (Functor f, Functor g) => Adjunction f g where
+class (Functor f, Functor g) => Adjunction f g | f -> g, g -> f where
   leftAdjunct :: (f x -> a) -> (x -> g a)
 
   rightAdjunct :: (x -> g a) -> (f x -> a)
@@ -68,19 +69,25 @@ runState :: State s a -> s -> (a, s)
 runState m s = unLPair $ unC m s
 
 get :: State s s
-get = C $ \s -> LP (s, s)
+get = state $ \s -> (s, s)
+
+gets :: (s -> s') -> State s s'
+gets f = f <$> get
 
 put :: s -> State s ()
-put s = C $ \_ -> LP ((), s)
+put s = state $ const ((), s)
 
 modify :: (s -> s) -> State s ()
-modify f = (f <$> get) >>= put
+modify f = gets f >>= put
+
+state :: (s -> (a, s)) -> State s a
+state = C . (LP .)
 
 -- finally we define the essential push/pop operations of stacks,
 -- and take the result out for a spin!
 
 push :: a -> State [a] ()
-push x = modify (x:)
+push = modify . (:)
 
 pop :: State [a] (Maybe a)
 pop = do
