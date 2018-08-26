@@ -6,6 +6,7 @@
 {-# LANGUAGE RankNTypes                 #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TypeOperators              #-}
+{-# LANGUAGE TupleSections              #-}
 
 module Main where
 
@@ -75,7 +76,7 @@ gets :: (s -> s') -> State s s'
 gets f = f <$> get
 
 put :: s -> State s ()
-put s = state $ const ((), s)
+put = state . const . ((),)
 
 modify :: (s -> s) -> State s ()
 modify f = gets f >>= put
