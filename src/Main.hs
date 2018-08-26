@@ -73,13 +73,13 @@ get :: State s s
 get = state $ \s -> (s, s)
 
 gets :: (s -> s') -> State s s'
-gets f = f <$> get
+gets = (<$> get)
 
 put :: s -> State s ()
 put = state . const . ((),)
 
 modify :: (s -> s) -> State s ()
-modify f = gets f >>= put
+modify = (>>= put) . gets
 
 state :: (s -> (a, s)) -> State s a
 state = C . (LP .)
